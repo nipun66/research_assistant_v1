@@ -2,11 +2,14 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 import json
+import base64
+
 
 if not firebase_admin._apps:
     cred_json = os.getenv("FIREBASE_CREDENTIALS")
     if cred_json:
-        cred = credentials.Certificate(json.loads(cred_json))
+        decoded = base64.b64decode(cred_json).decode('utf-8')
+        cred = credentials.Certificate(json.loads(decoded))
     else:
         cred = credentials.Certificate(os.getenv("FIREBASE_KEY_PATH", "service-account.json"))
     firebase_admin.initialize_app(cred)

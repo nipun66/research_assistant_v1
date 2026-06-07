@@ -9,7 +9,7 @@ load_dotenv()
 from llm_lang import get_answer
 
 import lang_memory
-from search import search_web
+from search_lang import search_web
 app = FastAPI()
 SESSION_ID=str(uuid.uuid4())
 

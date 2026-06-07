@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GenAI Chat Assistant</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #050816;
+      color: #f8fafc;
+      accent-color: #7c3aed;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, rgba(124, 58, 237, 0.24), transparent 28%),
+                  linear-gradient(180deg, #070b1c 0%, #050814 100%);
+    }
+
+    .app {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+    }
+
+    header {
+      display: grid;
+      gap: 16px;
+      padding: 18px 24px;
+      border-radius: 24px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(2rem, 3vw, 3.1rem);
+      letter-spacing: -0.04em;
+    }
+
+    header p {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 1.7;
+      max-width: 780px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .sidebar {
+      padding: 24px;
+      border-radius: 24px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .sidebar h2 {
+      margin-top: 0;
+      font-size: 1.15rem;
+    }
+
+    .sidebar ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #cbd5e1;
+      line-height: 1.85;
+    }
+
+    .chat-panel {
+      display: grid;
+      gap: 16px;
+    }
+
+    .chat-window {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 28px;
+      padding: 20px;
+      min-height: 520px;
+      box-shadow: 0 18px 60px rgba(15, 23, 42, 0.18);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-box {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      padding-right: 4px;
+      flex: 1;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 16px 20px;
+      border-radius: 20px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+      position: relative;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #4f46e5, #22c55e);
+      color: #f8fafc;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+      background: #111827;
+      color: #e2e8f0;
+      border-bottom-left-radius: 6px;
+    }
+
+    .message.bot::before,
+    .message.user::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      bottom: 12px;
+      box-shadow: inherit;
+    }
+
+    .message.bot::before {
+      left: -6px;
+      background: #111827;
+    }
+
+    .message.user::before {
+      right: -6px;
+      background: linear-gradient(135deg, #4f46e5, #22c55e);
+    }
+
+    .sources {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      margin-top: 6px;
+      background: rgba(30, 41, 59, 0.9);
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .sources a {
+      color: #7c3aed;
+      text-decoration: none;
+    }
+
+    .chat-input {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: #0b1222;
+      color: #e2e8f0;
+      outline: none;
+      padding: 18px;
+      resize: vertical;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      background: #7c3aed;
+      color: #f8fafc;
+      font-size: 1rem;
+      padding: 14px 22px;
+      border-radius: 16px;
+      box-shadow: 0 14px 30px rgba(124, 58, 237, 0.22);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(124, 58, 237, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .status {
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .history-item {
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: background 0.15s ease;
+    }
+
+    .history-item:hover {
+      background: rgba(124, 58, 237, 0.15);
+      border-color: rgba(124, 58, 237, 0.3);
+      color: #f8fafc;
+    }
+
+    .history-item.active {
+      background: rgba(124, 58, 237, 0.25);
+      border-color: rgba(124, 58, 237, 0.5);
+      color: #f8fafc;
+    }
+
+    .history-item-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .delete-btn {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 0.8rem;
+      padding: 2px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: none;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+
+    .delete-btn:hover {
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.1);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .history-empty {
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 320px minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 18px 14px 32px;
+      }
+      header {
+        border-radius: 20px;
+      }
+      .sidebar {
+        padding: 18px;
+      }
+      .chat-window {
+        padding: 18px;
+      }
+      textarea {
+        min-height: 96px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>GenAI Chat Assistant</h1>
+        <p>Ask anything and get research-backed answers with sources. This UI is now cleaner, faster, and built for multi-turn chat.</p>
+      </div>
+      <div class="status">Tip: Press Enter to send. Use Shift+Enter for a new line.</div>
+    </header>
+
+    <div class="grid">
+      <aside class="sidebar">
+        <h2>How to use</h2>
+        <ul>
+          <li>Ask one question at a time for best results.</li>
+          <li>Use the same chat to follow up and refine output.</li>
+          <li>Include context like "Explain like I'm 12" or "Make it concise."</li>
+        </ul>
+
+        <h2 style="margin-top: 28px;">Past Chats</h2>
+        <button id="newChatBtn" style="width:100%; margin-bottom: 12px; background: rgba(124,58,237,0.2); box-shadow: none; border: 1px solid rgba(124,58,237,0.3); font-size: 0.9rem; padding: 10px 14px;">
+          + New Chat
+        </button>
+        <div class="history-list" id="historyList">
+          <span class="history-empty">Loading...</span>
+        </div>
+      </aside>
+
+      <section class="chat-panel">
+        <div class="chat-window">
+          <div class="chat-box" id="chatBox"></div>
+
+          <div class="chat-input">
+            <textarea id="messageInput" placeholder="Type your question here..."></textarea>
+            <div class="actions">
+              <button id="sendButton">Send Message</button>
+              <span class="status" id="statusLabel">Ready to chat.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById('chatBox');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const statusLabel = document.getElementById('statusLabel');
+
+    function addMessage(text, role) {
+      const element = document.createElement('div');
+      element.className = 'message ' + role;
+      element.textContent = text;
+      chatBox.appendChild(element);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return element;
+    }
+
+    function setStatus(text) {
+      statusLabel.textContent = text;
+    }
+
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message) return;
+
+      addMessage(message, 'user');
+      messageInput.value = '';
+      sendButton.disabled = true;
+      setStatus('Thinking...');
+      const botMessage = addMessage('Thinking...', 'bot');
+
+      try {
+        const response = await fetch('/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        });
+
+        const data = await response.json();
+        botMessage.textContent = typeof data.answer === 'string' ? data.answer : JSON.stringify(data.answer);
+        setStatus('Answer received.');
+
+        if (data.sources && data.sources.length) {
+          const sourceBlock = document.createElement('div');
+          sourceBlock.className = 'sources';
+          sourceBlock.innerHTML = '<strong>Sources</strong><br>' + data.sources
+            .map((item, index) => '#' + (index + 1) + ': <a href="' + item.url + '" target="_blank">' + (item.title || item.url) + '</a>')
+            .join('<br>');
+          chatBox.appendChild(sourceBlock);
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        loadHistory();
+
+      } catch (error) {
+        botMessage.textContent = 'Unable to reach the backend. Please make sure the server is running.';
+        setStatus('Backend error.');
+      } finally {
+        sendButton.disabled = false;
+      }
+    }
+
+    async function loadHistory() {
+      const list = document.getElementById('historyList');
+      try {
+        const res = await fetch('/sessions');
+        if (!res.ok) throw new Error('Failed to fetch sessions');
+        const data = await res.json();
+
+        list.innerHTML = '';
+
+        if (!data.sessions || data.sessions.length === 0) {
+          list.innerHTML = '<span class="history-empty">No past chats yet.</span>';
+          return;
+        }
+
+        data.sessions.forEach(function(session) {
+          const item = document.createElement('div');
+          item.className = 'history-item';
+          item.title = session.session_id;
+
+          const textSpan = document.createElement('span');
+          textSpan.className = 'history-item-text';
+          textSpan.textContent = session.preview || session.session_id;
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.textContent = '✕';
+          deleteBtn.title = 'Delete this chat';
+
+          deleteBtn.addEventListener('click', async function(e) {
+            e.stopPropagation();
+            try {
+              const r = await fetch('/session/' + encodeURIComponent(session.session_id), { method: 'DELETE' });
+              if (!r.ok) throw new Error('Delete failed');
+              item.remove();
+              if (list.children.length === 0) {
+                list.innerHTML = '<span class="history-empty">No past chats yet.</span>';
+              }
+            } catch (err) {
+              setStatus('Could not delete session.');
+            }
+          });
+
+          item.addEventListener('click', async function() {
+            document.querySelectorAll('.history-item').forEach(function(el) {
+              el.classList.remove('active');
+            });
+            item.classList.add('active');
+
+            try {
+              const r = await fetch('/session/' + encodeURIComponent(session.session_id));
+              if (!r.ok) throw new Error('Failed to load session');
+              const d = await r.json();
+
+              chatBox.innerHTML = '';
+              if (d.messages && d.messages.length) {
+                d.messages.forEach(function(m) {
+                  addMessage(m.content, m.role === 'user' ? 'user' : 'bot');
+                });
+              } else {
+                addMessage('No messages found in this session.', 'bot');
+              }
+            } catch (err) {
+              addMessage('Could not load this chat session.', 'bot');
+            }
+          });
+
+          item.appendChild(textSpan);
+          item.appendChild(deleteBtn);
+          list.appendChild(item);
+        });
+
+      } catch (e) {
+        list.innerHTML = '<span class="history-empty">Could not load history.</span>';
+      }
+    }
+
+    sendButton.addEventListener('click', sendMessage);
+
+    messageInput.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    document.getElementById('newChatBtn').addEventListener('click', async function() {
+      try {
+        await fetch('/new-session', { method: 'POST' });
+        chatBox.innerHTML = '';
+        document.querySelectorAll('.history-item').forEach(function(el) {
+          el.classList.remove('active');
+        });
+        setStatus('New chat started.');
+        messageInput.focus();
+        loadHistory();
+      } catch (err) {
+        setStatus('Could not start new chat.');
+      }
+    });
+
+    loadHistory();
+  </script>
+</body>
+</html>

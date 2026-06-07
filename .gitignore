@@ -1,0 +1,13 @@
+.env
+service-account.json
+__pycache__/
+*.pyc
+main.py
+llm.py
+memory.py
+memory2.py
+memeory_lang.py
+requirements_2.txt
+gemini.py
+search.py
+service-account.json

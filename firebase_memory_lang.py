@@ -70,3 +70,15 @@ def delete_session(session_id: str):
     for msg in messages:
         msg.reference.delete()
     db.collection("conversations").document(session_id).delete()
+def save_summary(session_id: str,summary:str):
+    db.collection("summaries")\
+    .document(session_id)\
+    .set({
+        "summary": summary,
+        "update_at": firestore.SERVER_TIMESTAMP
+    })
+def load_summary(session_id:str)->str:
+    doc = db.collection("summaries").document(session_id).get()
+    if doc.exists:
+        return doc.to_dict().get("summary", "")
+    return ""
